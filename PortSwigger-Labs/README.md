@@ -44,4 +44,34 @@ A collection of individual vulnerability labs completed on PortSwigger's Web Sec
 
 *Logged in as `administrator` with the query's password check bypassed — confirmed by the lab-solved banner.*
 
+---
+
+## SSRF – Basic SSRF Against the Local Server This lab has a stock check feature which fetches data from an internal system.
+
+(To solve the lab, change the stock check URL to access the admin interface at `http://localhost/admin` and delete the user `carlos`.)
+
+
+
+**Difficulty:** Apprentice
+
+**Vulnerability:** The application's stock-check feature made a server-side request to a `stockApi` URL parameter to fetch stock data from an internal system (`stock.weliketoshop.net`). Because the server trusted this URL parameter without validating it against an allow-list, it could be redirected to any internal address — including services never meant to be reached from outside the network.
+
+**Payload:** The original parameter, `stockApi=http://stock.weliketoshop.net:8080/product/stock/check?productId=2&storeId=1`, was intercepted in Burp and replaced with:
+`stockApi=http://localhost/admin/delete?username=carlos`
+
+**Result:** The server made the forged request on the application's behalf, reaching its own internal admin interface at `localhost/admin` — inaccessible directly from outside — and executed the delete action, removing the user `carlos`. Confirmed by the lab's "solved" banner.
+
+**Fix:** Validate and allow-list all server-side request destinations; never let user-controllable input directly set a URL the server will fetch. Segment internal admin interfaces so they aren't reachable even from the application server itself, and require separate authentication for admin actions.
+
+<img width="1174" height="359" alt="image" src="https://github.com/user-attachments/assets/56dc2222-cd75-4b48-b319-33b9aa5859e1" />
+
+*The stock-check feature's normal request to `stock.weliketoshop.net`, before tampering.*
+
+<img width="1600" height="738" alt="image" src="https://github.com/user-attachments/assets/f1bab08a-bae6-49f5-b674-37a7da22409a" />
+
+*The `stockApi` parameter replaced with `http://localhost/admin/delete?username=carlos` in Burp Suite.*
+
+<img width="1600" height="779" alt="image" src="https://github.com/user-attachments/assets/1f86e2a8-e3f2-4153-8c9e-fcad277256b4" />
+
+*Confirmation that the forged server-side request successfully deleted the user `carlos` via the internal admin interface.*
 
