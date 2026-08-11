@@ -105,3 +105,35 @@ Solve the lab by finding the password for the user `carlos`, and logging into th
 <img width="1549" height="766" alt="image" src="https://github.com/user-attachments/assets/4f448639-99f9-43d7-90b4-041691c9666f" />
 
 *Logged in as `carlos` using the password extracted from the exposed transcript — confirmed by the lab-solved banner.*
+
+---
+
+## CSRF – Vulnerability With No Defenses
+
+(This lab's email change functionality is vulnerable to CSRF.
+To solve the lab, craft some HTML that uses a CSRF attack to change the viewer's email address and upload it to your exploit server.
+You can log in to your own account using the following credentials: `wiener:peter`)
+
+**Difficulty:** Apprentice
+
+**Vulnerability:** The application's email-change endpoint (`/my-account/change-email`) accepted POST requests with no CSRF token, no origin/referer check, and no other anti-CSRF protection. Because the browser automatically attaches the logged-in user's session cookie to any request sent to the site — even one triggered from an attacker's page — this endpoint could be forged from outside the application entirely.
+
+**Payload:** Copied a legitimate email-change request from Burp Suite and used a CSRF PoC generator tool (CSRFShark) to convert it into an auto-submitting HTML form:
+```html
+<form method="POST" action="https://[lab-id].web-security-academy.net/my-account/change-email">
+  <input type="hidden" name="email" value="thor@gmail.com">
+  <input type="submit" value="Submit Request">
+</form>
+```
+
+**Result:** Hosting this HTML and having the logged-in victim (`wiener`) load it caused the form to auto-submit using their active session — silently changing their account email to `thor@gmail.com` with no interaction beyond loading the page. Confirmed by the account page updating to show `Your email is: thor@gmail.com`.
+
+**Fix:** Implement anti-CSRF tokens on all state-changing requests, tied to the user's session and validated server-side on submission. Additionally, check the `Origin`/`Referer` header to confirm requests originate from the application itself, and apply `SameSite=Lax` or `Strict` on session cookies to prevent them from being sent on cross-site requests.
+
+<img width="1600" height="749" alt="image" src="https://github.com/user-attachments/assets/ae6d3401-4136-45e2-b93f-a2abecf80c70" />
+
+*The auto-submitting HTML form generated from the intercepted request, with `email=thor@gmail.com` set as the hidden payload.*
+
+<img width="1012" height="547" alt="image" src="https://github.com/user-attachments/assets/539591d5-3c19-4aa3-812f-4da08132c65f" />
+
+*Confirmation that the victim's email was silently changed to `thor@gmail.com` after the forged form was submitted.*
