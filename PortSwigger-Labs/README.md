@@ -75,3 +75,33 @@ A collection of individual vulnerability labs completed on PortSwigger's Web Sec
 
 *Confirmation that the forged server-side request successfully deleted the user `carlos` via the internal admin interface.*
 
+---
+
+## IDOR – Insecure Direct Object References (Chat Transcripts)
+
+(This lab stores user chat logs directly on the server's file system, and retrieves them using static URLs.
+Solve the lab by finding the password for the user `carlos`, and logging into their account.)
+
+**Difficulty:** Apprentice
+
+**Vulnerability:** The application's live chat feature stored each conversation transcript as a file on the server, retrievable via a static, sequentially-numbered URL (`/download-transcript/N.txt`). Because the server didn't verify that the requesting user actually owned that transcript number, any authenticated user could access any other user's chat logs simply by changing the number in the URL.
+
+**Payload:** Intercepted a request for `/download-transcript/3.txt` (my own session's transcript) in Burp and changed it to `/download-transcript/1.txt`.
+
+**Result:** The server returned transcript `1.txt` without any ownership check — a chat log belonging to another user, `carlos`, who had asked the support bot to confirm a forgotten password. The transcript exposed his plaintext password (`ecvxwf6g74giwpheo8bb`) in the bot's response. Using this password, I logged in directly as `carlos`, confirmed by the account page showing `Your username is: carlos` and the lab's "solved" banner.
+
+**Fix:** Never expose sensitive records via predictable, sequential identifiers. Enforce server-side authorization checks on every object access — verify the requesting user actually owns the resource before returning it, regardless of whether the URL itself "looks" valid. Additionally, sensitive data like passwords should never be transmitted or stored in plaintext, even within support chat logs.
+
+<img width="1466" height="900" alt="image" src="https://github.com/user-attachments/assets/2885c6d0-5279-43c2-a2ca-0b19bfcfebcb" />
+
+*The original request for my own chat transcript (3.txt), intercepted in Burp Suite.*
+
+
+<img width="1494" height="859" alt="image" src="https://github.com/user-attachments/assets/79f1fbc6-4ddf-4c6a-a6ad-57c2bfb86e95" />
+
+*The transcript ID changed from 3 to 1 in Burp Repeater — the response returned `carlos`'s chat log, exposing his plaintext password.*
+
+
+<img width="1549" height="766" alt="image" src="https://github.com/user-attachments/assets/4f448639-99f9-43d7-90b4-041691c9666f" />
+
+*Logged in as `carlos` using the password extracted from the exposed transcript — confirmed by the lab-solved banner.*
